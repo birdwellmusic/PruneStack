@@ -17,7 +17,7 @@ import MuseScore 1.0
 MuseScore {
     version:  "1.0"
     description: "Selectively prune notes from a chord based on their vertical stack level in the chord."
-    menuPath: "Plugins.Notes.Arranging PruneStack"
+    menuPath: "Plugins.Prune Stack"
     pluginType: "dialog"
     width:  380
     height: 160
@@ -319,5 +319,3 @@ MuseScore {
 
         }
     }
-
-
