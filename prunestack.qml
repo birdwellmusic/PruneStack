@@ -1,7 +1,14 @@
 //=============================================================================
 //  PruneStack Plugin for MuseScore 2.x
-//  Copyright (C) 2016 Rob Birdwell
-//  BirdwellMusic.com
+//  This script Copyright (C) 2016 Rob Birdwell and BirdwellMusic.com
+//  Full credit to the MuseScore team and all numerous other plugin developers.  
+//  Portions of this script were adapted from the colornotes.qml, walk.qml and
+//  other scripts by Werner Schweer, et al. 
+//
+//  This program is free software; you can redistribute it and/or modify
+//  it under the terms of the GNU General Public License version 2
+//  as published by the Free Software Foundation and appearing in
+//  the file LICENCE.GPL
 //=============================================================================
 import QtQuick 2.1
 import QtQuick.Controls 1.0
@@ -9,13 +16,13 @@ import MuseScore 1.0
 
 MuseScore {
     version:  "1.0"
-    description: "Prune Stack"
-    menuPath: "Plugins.PruneStack"
+    description: "Selectively prune notes from a chord based on their vertical stack level in the chord."
+    menuPath: "Plugins.Notes.Arranging PruneStack"
     pluginType: "dialog"
     width:  380
     height: 160
 
-    function getAllNotesInRange(noteArray) {
+    function getAllChordsInRange(chordArray) {
       
         var cursor = curScore.newCursor();
         cursor.rewind(1);
@@ -55,20 +62,14 @@ MuseScore {
                    
                 while (cursor.segment && (cursor.tick < endTick)) {
                     if (cursor.element && cursor.element.type == Element.CHORD) {
-                        // TODO: do I/we care about grace notes in this context? RB
                         var graceChords = cursor.element.graceNotes;
                         for (var i = 0; i < graceChords.length; i++) {
-                            // iterate through all grace chords
-                            var notes = graceChords[i].notes;
-                            for (var j = 0; j < notes.length; j++) {
-                                noteArray.push(notes[j]);
-                            }
+                              chordArray.push(graceChords[i]);
                         }
-                        var notes = cursor.element.notes;
-                        for (var i = 0; i < notes.length; i++) {
-                            var note = notes[i];
-                            noteArray.push(note);
-                        }
+                       
+                        // the chord of the notes...
+                        chordArray.push(cursor.element);
+ 
                     }
                     cursor.next();
                 }
@@ -76,132 +77,114 @@ MuseScore {
         }
     }
 
-
-    // TODO: re-factor as a lot of this code is shared with pruneStack()
-    // NOTE: this functionality isn't working - seems to move to layer
-    //       but it's not real...when saved, the notes come back to the layer they were on.  RB
-    function moveToLayer()
-    {
-       console.log("Starting moveToLayer()");
-
-        // Get the selected notes in the selected segment...
-        var notes = new Array();
-        getAllNotesInRange(notes);
-
-        var notesToMove = new Array();
-        
-        var vStackHeight = parseInt(ctrlStackSize.text); 
-        var vStackSelectIndicesCsv = ctrlStackLevels.text;  
-        var vStackSelectIndices = vStackSelectIndicesCsv.split(",");
-        var layer = parseInt(ctrlLayer.text);    
-
-        if ( isNaN(vStackHeight) )
-        {
-            console.log("Invalid Stack Height Entry. Nan! Process aborted.");      
-            return;
-        }
-
-        if ( isNaN(layer) || layer < 1 || layer > 4 )
-        {
-            console.log("Invalid Layer Entry. Nan! Process aborted.");      
-            return;   
-        }
-
-        var offset = 0;            
-        for (var i=0; i < notes.length; i++) {
-                  
-            if ( offset > (vStackHeight-1) ) {
-                offset = 0;
-            }
-                  
-            for ( var j=0; j<vStackSelectIndices.length; j++ ) {
-                var parsedIndex = parseInt(vStackSelectIndices[j]);
-                if ( isNaN(parsedIndex) || parsedIndex <= 0 || parsedIndex > vStackHeight ) {
-                    continue;
-                }
-
-                if ( offset == (parsedIndex-1) ) { // compare to 0-based index.
-                    notesToMove.push(notes[i]);
-                }
-            }
-                  
-            offset++;
-        }
-
-        if ( notesToMove.length > 0 )
-        {
-            curScore.startCmd();
-
-            for ( var n=0; n < notesToMove.length; n++)
-            {
-                notesToMove[n].track = (layer-1);
-            }
-
-            curScore.endCmd();
-      
-            // refresh the current state of the layout with changes!
-            curScore.doLayout();
-        }
-    }
-
     function pruneStack()
     {
         console.log("Starting pruneStack()");
+        ctrlMessageLabel.text = "";
 
-        // Get the selected notes in the selected segment...
-        var notes = new Array();
-        getAllNotesInRange(notes);
+        // Get the selected chords in the selected segment...
+        var chords = new Array();
+        getAllChordsInRange(chords);
 
         var notesToDelete = new Array();
-        
-        var vStackHeight = parseInt(ctrlStackSize.text); 
-        var vStackSelectIndicesCsv = ctrlStackLevels.text;  
-        var vStackSelectIndices = vStackSelectIndicesCsv.replace(" ", "").split(",");
 
-        if ( isNaN(vStackHeight) )
-        {
-            console.log("Invalid Stack Height Entry. Nan! Process aborted.");      
-            return;
+        var levels = new Array();
+        if ( ctrlCheckBoxLevel8.checked ) {
+            levels.push(8);
+        }
+        if ( ctrlCheckBoxLevel7.checked ) {
+            levels.push(7);
+        }
+        if ( ctrlCheckBoxLevel6.checked ) {
+            levels.push(6);
+        }
+        if ( ctrlCheckBoxLevel5.checked ) {
+            levels.push(5);
+        }
+        if ( ctrlCheckBoxLevel4.checked ) {
+            levels.push(4);
+        }
+        if ( ctrlCheckBoxLevel3.checked ) {
+            levels.push(3);
+        }
+        if ( ctrlCheckBoxLevel2.checked ) {
+            levels.push(2);
+        }
+        if ( ctrlCheckBoxLevel1.checked ) {
+            levels.push(1);
+        }
+           
+        console.log("# of chords: " + chords.length);
+        console.log("# of levels to prune: " + levels.length);
+
+        // NOTE: it's a known issue if we delete every note in a the chord (cause an exception)
+        // so if this is detected, we won't actually prune...
+        var emptyChordPotential = false;
+
+        for (var c=0; c < chords.length; c++) {
+            var notesInChord = chords[c].notes.length;
+
+            console.log("# of notes in chord # " + (c+1) + ":" + notesInChord);
+
+            var notesQueuedToDeleteInChord = 0;
+
+            for ( var n=0; n < chords[c].notes.length; n++ ) {
+                  for ( var j=0; j < levels.length; j++ ) {
+                     if ( (levels[j]-1) != n ) {
+                       //console.log("Skipped note #" + (n+1) + " at level #" + levels[j] + " in chord #" + (c+1));
+                       continue;
+                     }
+
+                     notesToDelete.push(chords[c].notes[n]);
+                     notesQueuedToDeleteInChord++;
+                     
+                     console.log("Added a note to delete at level #" + levels[j] + " in chord #" + (c+1) + " - # notes in chord: " + notesInChord );
+
+                     if ( notesQueuedToDeleteInChord >= notesInChord ) {
+                        console.log("Empty chord potential detected at level #" + levels[j] + " in chord #" + (c+1));
+                        emptyChordPotential = true;
+                     }
+                  }
+             }
         }
 
-        var offset = 0;            
-        for (var i=0; i < notes.length; i++) {
-                  
-            if ( offset > (vStackHeight-1) ) {
-                offset = 0;
-            }
-                  
-            for ( var j=0; j<vStackSelectIndices.length; j++ ) {
-                var parsedIndex = parseInt(vStackSelectIndices[j]);
-                if ( isNaN(parsedIndex) || parsedIndex <= 0 || parsedIndex > vStackHeight ) {
-                    continue;
-                }
-
-                if ( offset == (parsedIndex-1) ) { // compare to 0-based index.
-                    notesToDelete.push(notes[i]);
-                }
-            }
-                  
-            offset++;
-        }
+        var pruned = false;
+        var whyNoPrune = "";
 
         if ( notesToDelete.length > 0 )
         {
             curScore.startCmd();
 
-            for ( var n=0; n<notesToDelete.length; n++)
-            {
-                var chord = notesToDelete[n].parent;
-                chord.remove(notesToDelete[n]); 
+            if ( emptyChordPotential == false ) {
+                  for ( var n = 0; n < notesToDelete.length; n++) {
+                      var chord = notesToDelete[n].parent;
+                      chord.remove(notesToDelete[n]); 
+                      pruned = true;
+                  }
+            }
+            else {
+                  console.log("No notes pruned as the requested prune levels would create an empty chord, which is not allowed!");
+                  whyNoPrune = qsTr("Can't do - would create an empty chord! Try reducing levels.");
+                  pruned = false;
             }
 
             curScore.endCmd();
-      
-            // refresh the current state of the layout with changes!
-            curScore.doLayout();
         }
 
+      // if something pruned, refresh the current state of the layout with changes!
+      if ( pruned ) {
+         curScore.doLayout();
+      } else {
+         if ( whyNoPrune.length > 0 ) {
+            ctrlMessageLabel.text = whyNoPrune;
+         } else {
+            ctrlMessageLabel.text = qsTr("Nothing pruned! Select the levels that match your chords stacks.");
+         } 
+     }
+
       console.log("Ending pruneStack()");
+
+      return pruned;
     }
 
     onRun: {
@@ -215,12 +198,12 @@ MuseScore {
 
     Rectangle {
         property alias mouseArea: mouseArea
-
+        property alias btnPruneStack: btnPruneStack
+        property alias btnClose: btnClose
+        property alias ctrlHintLabel : ctrlHintLabel
         width: 380
         height: 160
-        property alias btnPruneStack: btnPruneStack
-        property alias btnMoveToLayer : btnMoveToLayer
-        property alias btnClose: btnClose
+       
 	   color: "grey"
         }
 
@@ -233,103 +216,85 @@ MuseScore {
             anchors.fill: parent
 
             Text {
-                id: ctrlStackSizeLabel
-                x: 20
-                y: 20
-                width: 100
-                text: qsTr("Stack Size:")
-                font.bold: true
-                font.pointSize: 14
-            }
-
-            TextInput {
-                id: ctrlStackSize
-                x: 140
-                y: 20
-                width: 35
-                height: 30
-                text: qsTr("3")
-                cursorVisible: true
-                color: "blue" 
-                font.pointSize: 14
-            }
-
-            Text {
                 id: ctrlStackRangeLabel
-                x: 20
-                y: 50
+                x: 15
+                y: 15
                 width: 100
                 text: "Levels:"
-                font.bold: true
-                font.pointSize: 14
             }
 
-            TextInput {
-                id: ctrlStackLevels
-                x: 140
-                y: 50
-                width: 100
-                height: 30
-                text: qsTr("2,3")
-                cursorVisible: true
-                color: "blue" 
-                font.pointSize: 14
+            Column {
+                  x: 80
+                  y: 15
+                  CheckBox {
+                        id: ctrlCheckBoxLevel4
+                        text: qsTr("4")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel3
+                        text: qsTr("3")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel2
+                        text: qsTr("2")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel1
+                        text: qsTr("1")
+                  }
             }
 
-            Text {
-                id: ctrlLayerLabel
-                x: 20
-                y: 90
-                width: 100
-                text: "Layer:"
-                font.bold: true
-                visible: false
-            }
-
-            TextInput {
-                id: ctrlLayer
-                x: 140
-                y: 90
-                width: 100
-                height: 30
-                text: qsTr("2")
-                cursorVisible: true
-                visible: false
+            Column {
+                  x: 125
+                  y: 15
+                  CheckBox {
+                        id: ctrlCheckBoxLevel8
+                        text: qsTr("8")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel7
+                        text: qsTr("7")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel6
+                        text: qsTr("6")
+                  }
+                  CheckBox {
+                        id: ctrlCheckBoxLevel5
+                        text: qsTr("5")
+                  }
             }
 
             Button {
                 id: btnPruneStack
-                x: 241
-                y: 20
+                x: 240
+                y: 15
                 width: 125
                 height: 35
                 text: qsTr("Prune Stack")
                 onClicked: { 
-                    pruneStack();
-                    Qt.quit();
+                    if ( pruneStack() ) {
+                        Qt.quit();
+                    }
                 }
             }
 
-            // TODO: this feature not implemented/hidden for now.
-            // Ideally, we can set a selected stack of notes to another layer/track. RB
-            Button {
-                id: btnMoveToLayer
-                x: 241
-                y: 65
-                width: 125
-                height: 35
-                text: qsTr("Move to Layer")
-                enabled: false
-                visible: false
-                onClicked: { 
-                    moveToLayer();
-                    Qt.quit();
-                }
+            Text {
+                id: ctrlMessageLabel
+                x: 240
+                y: 55
+                width: 150
+                text: qsTr("")
+                font.italic: true
+                color: "red"
+                wrapMode: Text.WordWrap
+                font.pointSize: 6
             }
+
 
             Button {
                 id: btnClose
-                x: 241
+                x: 240
                 y: 105
                 width: 125
                 height: 35
@@ -343,14 +308,16 @@ MuseScore {
             Text {
                 id: ctrlHintLabel
                 x: 20
-                y: 90
+                y: 100
                 width: 200
-                text: qsTr("Hints: bottom note is lowest in stack; comma delimit stack levels; Save your score now!")
-                font.bold: true
+                text: qsTr("Hints: check the levels you want to prune. Notes not in level are skipped; Save your score now!")
+                font.italic: true
                 color: "white"
                 wrapMode: Text.WordWrap
+                font.pointSize: 6
             }
 
         }
     }
+
 
