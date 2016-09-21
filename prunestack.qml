@@ -92,7 +92,7 @@ MuseScore {
     function pruneStack()
     {
         console.log("Starting pruneStack()");
-        ctrlMessageLabel.text = "";
+        ctrlMessageLabel.text = qsTr("");
 
         // Get the selected chords in the selected segment...
         var chords = new Array();
@@ -291,10 +291,10 @@ MuseScore {
             y: 105
             model: ListModel {
                 id: cbVoiceItems
-                ListElement { text: "1"; color: "Yellow" }
+                ListElement { text: "1"; color: "Blue" }
                 ListElement { text: "2"; color: "Green" }
                 ListElement { text: "3"; color: "Brown" }
-                ListElement { text: "3"; color: "Red" }
+                ListElement { text: "4"; color: "Purple" }
             }
         }
 
@@ -328,14 +328,14 @@ MuseScore {
 
         Text {
             id: ctrlMessageLabel
-            x: 200
-            y: 300
-            width: 150
+            x: 220
+            y: 110
+            width: 280
             text: qsTr("")
             font.italic: true
             color: "red"
             wrapMode: Text.WordWrap
-            font.pointSize: 14
+            font.pointSize: 12
         }
 
 
