@@ -19,8 +19,8 @@ MuseScore {
     description: "Selectively prune notes from a chord based on their vertical stack level in the chord."
     menuPath: "Plugins.Prune Stack"
     pluginType: "dialog"
-    width:  500
-    height: 300
+    width:  400
+    height: 240
 
     function getAllChordsInRange(chordArray) {
 
@@ -186,7 +186,7 @@ MuseScore {
             if ( whyNoPrune.length > 0 ) {
                 ctrlMessageLabel.text = whyNoPrune;
             } else {
-                ctrlMessageLabel.text = qsTr("Nothing pruned! Select the levels that match your chords stacks.");
+                ctrlMessageLabel.text = qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
             }
         }
 
@@ -211,8 +211,8 @@ MuseScore {
         property alias btnClose: btnClose
         property alias ctrlHintLabel : ctrlHintLabel
         property alias ctrlMessageLabel : ctrlMessageLabel
-        width: 500
-        height: 300
+        width: 400
+        height: 240
 
         color: "grey"
     }
@@ -227,7 +227,7 @@ MuseScore {
 
         Text {
             id: ctrlStackRangeLabel
-            x: 15
+            x: 25
             y: 15
             width: 100
             text: "Levels:"
@@ -277,8 +277,8 @@ MuseScore {
 
         Text {
             id: ctrlVoicesLabel
-            x: 15
-            y: 105
+            x: 300
+            y: 96
             width: 100
             text: "Voice:"
         }
@@ -287,8 +287,8 @@ MuseScore {
             id: ctrlComboBoxVoice
             width: 55
             currentIndex: 1
-            x: 80
-            y: 105
+            x: 340
+            y: 90
             model: ListModel {
                 id: cbVoiceItems
                 ListElement { text: "1"; color: "Blue" }
@@ -300,7 +300,7 @@ MuseScore {
 
         Button {
             id: btnPruneStack
-            x: 350
+            x: 270
             y: 15
             width: 125
             height: 35
@@ -314,8 +314,8 @@ MuseScore {
 
         Button {
             id: btnMoveToVoice
-            x: 350
-            y: 65
+            x: 270
+            y: 55
             width: 125
             height: 35
             text: qsTr("Move to Voice")
@@ -328,8 +328,8 @@ MuseScore {
 
         Text {
             id: ctrlMessageLabel
-            x: 220
-            y: 110
+            x: 120
+            y: 145
             width: 280
             text: qsTr("")
             font.italic: true
@@ -341,8 +341,8 @@ MuseScore {
 
         Button {
             id: btnClose
-            x: 350
-            y: 250
+            x: 270
+            y: 200
             width: 125
             height: 35
             text: qsTr("Close")
@@ -355,7 +355,7 @@ MuseScore {
         Text {
             id: ctrlHintLabel
             x: 20
-            y: 200
+            y: 100
             width: 250
             text: qsTr("Hints: check the levels you want to prune. Notes not in level are skipped; Save your score now!")
             font.italic: true
