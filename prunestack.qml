@@ -1,9 +1,9 @@
 //=============================================================================
 //  PruneStack Plugin for MuseScore 2.x
 //  This script Copyright (C) 2016 Rob Birdwell and BirdwellMusic.com
-//  Full credit to the MuseScore team and all numerous other plugin developers.  
+//  Full credit to the MuseScore team and all numerous other plugin developers.
 //  Portions of this script were adapted from the colornotes.qml, walk.qml and
-//  other scripts by Werner Schweer, et al. 
+//  other scripts by Werner Schweer, et al.
 //
 //  This program is free software; you can redistribute it and/or modify
 //  it under the terms of the GNU General Public License version 2
@@ -12,6 +12,7 @@
 //=============================================================================
 import QtQuick 2.1
 import QtQuick.Controls 1.0
+import QtQuick.Dialogs 1.1
 import MuseScore 1.0
 
 MuseScore {
@@ -77,9 +78,15 @@ MuseScore {
         }
     }
 
+
+    function displayMessageDlg(msg) {
+        ctrlMessageDialog.text = qsTr(msg);
+        ctrlMessageDialog.visible = true;
+    }
+
     function moveToVoice()
     {
-        // TODO: this is only marginally functional/useful - the FUTURE goal is to move 
+        // TODO: this is only marginally functional/useful - the FUTURE goal is to move
         // ONLY the selected LEVEL chord notes to the target voice... RB
 
         var cmdVoiceIndex = ctrlComboBoxVoice.currentIndex + 1;
@@ -88,11 +95,9 @@ MuseScore {
         return true;
     }
 
-
     function pruneStack()
     {
         console.log("Starting pruneStack()");
-        ctrlMessageLabel.text = qsTr("");
 
         // Get the selected chords in the selected segment...
         var chords = new Array();
@@ -183,11 +188,10 @@ MuseScore {
         if ( pruned ) {
             curScore.doLayout();
         } else {
-            if ( whyNoPrune.length > 0 ) {
-                ctrlMessageLabel.text = whyNoPrune;
-            } else {
-                ctrlMessageLabel.text = qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
-            }
+
+            var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
+
+            displayMessageDlg(msg);
         }
 
         console.log("Ending pruneStack()");
@@ -199,7 +203,9 @@ MuseScore {
         console.log("PruneStack script starting...");
 
         if (typeof curScore === 'undefined') {
-            console.log("PruneStack exiting without processing - no current score!");
+            var msg = "PruneStack exiting without processing - no current score!";
+            console.log(msg);
+            displayMessageDlg(msg);
             Qt.quit();
         }
     }
@@ -210,158 +216,157 @@ MuseScore {
         property alias btnMoveToVoice: btnMoveToVoice
         property alias btnClose: btnClose
         property alias ctrlHintLabel : ctrlHintLabel
-        property alias ctrlMessageLabel : ctrlMessageLabel
+        property alias ctrlMessageDialog : ctrlMessageDialog
+
         width: 400
         height: 240
-
         color: "grey"
-    }
 
-    MouseArea {
-        id: mouseArea
-        anchors.rightMargin: 0
-        anchors.bottomMargin: 0
-        anchors.leftMargin: 0
-        anchors.topMargin: 0
-        anchors.fill: parent
-
-        Text {
-            id: ctrlStackRangeLabel
-            x: 25
-            y: 15
-            width: 100
-            text: "Levels:"
-        }
-
-        Column {
-            x: 80
-            y: 15
-            CheckBox {
-                id: ctrlCheckBoxLevel4
-                text: qsTr("4")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel3
-                text: qsTr("3")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel2
-                text: qsTr("2")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel1
-                text: qsTr("1")
+        MessageDialog {
+            id: ctrlMessageDialog
+            icon: StandardIcon.Information
+            title: "PruneStack Message"
+            text: "Welcome to PruneStack!"
+            visible: false
+            onAccepted: {
+                visible = false;
             }
         }
 
-        Column {
-            x: 125
-            y: 15
-            CheckBox {
-                id: ctrlCheckBoxLevel8
-                text: qsTr("8")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel7
-                text: qsTr("7")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel6
-                text: qsTr("6")
-            }
-            CheckBox {
-                id: ctrlCheckBoxLevel5
-                text: qsTr("5")
-            }
-        }
+        MouseArea {
+            id: mouseArea
+            anchors.rightMargin: 0
+            anchors.bottomMargin: 0
+            anchors.leftMargin: 0
+            anchors.topMargin: 0
+            anchors.fill: parent
 
-        Text {
-            id: ctrlVoicesLabel
-            x: 300
-            y: 96
-            width: 100
-            text: "Voice:"
-        }
-
-        ComboBox {
-            id: ctrlComboBoxVoice
-            width: 55
-            currentIndex: 1
-            x: 340
-            y: 90
-            model: ListModel {
-                id: cbVoiceItems
-                ListElement { text: "1"; color: "Blue" }
-                ListElement { text: "2"; color: "Green" }
-                ListElement { text: "3"; color: "Brown" }
-                ListElement { text: "4"; color: "Purple" }
+            Text {
+                id: ctrlStackRangeLabel
+                x: 25
+                y: 15
+                width: 100
+                text: "Levels:"
             }
-        }
 
-        Button {
-            id: btnPruneStack
-            x: 270
-            y: 15
-            width: 125
-            height: 35
-            text: qsTr("Prune Stack")
-            onClicked: {
-                if ( pruneStack() ) {
+            Column {
+                x: 80
+                y: 15
+                CheckBox {
+                    id: ctrlCheckBoxLevel4
+                    text: qsTr("4")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel3
+                    text: qsTr("3")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel2
+                    text: qsTr("2")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel1
+                    text: qsTr("1")
+                }
+            }
+
+            Column {
+                x: 125
+                y: 15
+                CheckBox {
+                    id: ctrlCheckBoxLevel8
+                    text: qsTr("8")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel7
+                    text: qsTr("7")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel6
+                    text: qsTr("6")
+                }
+                CheckBox {
+                    id: ctrlCheckBoxLevel5
+                    text: qsTr("5")
+                }
+            }
+
+            Text {
+                id: ctrlVoicesLabel
+                x: 292
+                y: 96
+                width: 100
+                text: "Voice:"
+            }
+
+            ComboBox {
+                id: ctrlComboBoxVoice
+                width: 55
+                currentIndex: 1
+                x: 340
+                y: 90
+                model: ListModel {
+                    id: cbVoiceItems
+                    ListElement { text: "1"; color: "Blue" }
+                    ListElement { text: "2"; color: "Green" }
+                    ListElement { text: "3"; color: "Brown" }
+                    ListElement { text: "4"; color: "Purple" }
+                }
+            }
+
+            Button {
+                id: btnPruneStack
+                x: 270
+                y: 15
+                width: 125
+                height: 35
+                text: qsTr("Prune Stack")
+                onClicked: {
+                    if ( pruneStack() ) {
+                        Qt.quit();
+                    }
+                }
+            }
+
+            Button {
+                id: btnMoveToVoice
+                x: 270
+                y: 55
+                width: 125
+                height: 35
+                text: qsTr("Move to Voice")
+                onClicked: {
+                    if ( moveToVoice() ) {
+                        Qt.quit();
+                    }
+                }
+            }
+
+            Button {
+                id: btnClose
+                x: 270
+                y: 200
+                width: 125
+                height: 35
+                text: qsTr("Close")
+                onClicked: {
+                    console.log("PruneStack closed.");
                     Qt.quit();
                 }
             }
-        }
 
-        Button {
-            id: btnMoveToVoice
-            x: 270
-            y: 55
-            width: 125
-            height: 35
-            text: qsTr("Move to Voice")
-            onClicked: {
-                if ( moveToVoice() ) {
-                    Qt.quit();
-                }
+            Text {
+                id: ctrlHintLabel
+                x: 20
+                y: 100
+                width: 250
+                text: qsTr("Hints: check the levels you want to prune. Notes not in level are skipped; Save your score now!")
+                font.italic: true
+                color: "white"
+                wrapMode: Text.WordWrap
+                font.pointSize: 10
             }
-        }
 
-        Text {
-            id: ctrlMessageLabel
-            x: 120
-            y: 145
-            width: 280
-            text: qsTr("")
-            font.italic: true
-            color: "red"
-            wrapMode: Text.WordWrap
-            font.pointSize: 12
-        }
-
-
-        Button {
-            id: btnClose
-            x: 270
-            y: 200
-            width: 125
-            height: 35
-            text: qsTr("Close")
-            onClicked: {
-                console.log("PruneStack closed.");
-                Qt.quit();
-            }
-        }
-
-        Text {
-            id: ctrlHintLabel
-            x: 20
-            y: 100
-            width: 250
-            text: qsTr("Hints: check the levels you want to prune. Notes not in level are skipped; Save your score now!")
-            font.italic: true
-            color: "white"
-            wrapMode: Text.WordWrap
-            font.pointSize: 10
         }
 
     }
