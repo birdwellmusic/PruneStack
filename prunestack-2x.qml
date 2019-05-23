@@ -1,6 +1,6 @@
-//=============================================================================
+//==========================================================================================
 //  PruneStack Plugin for MuseScore 2.x
-//  This script Copyright (C) 2016 Rob Birdwell and BirdwellMusic.com
+//  This script Copyright (C) 2016-2019 Rob Birdwell/BirdwellMusic LLC and BirdwellMusic.com
 //  Full credit to the MuseScore team and all numerous other plugin developers.
 //  Portions of this script were adapted from the colornotes.qml, walk.qml and
 //  other scripts by Werner Schweer, et al.
@@ -9,7 +9,7 @@
 //  it under the terms of the GNU General Public License version 2
 //  as published by the Free Software Foundation and appearing in
 //  the file LICENCE.GPL
-//=============================================================================
+//===========================================================================================
 import QtQuick 2.1
 import QtQuick.Controls 1.0
 import QtQuick.Dialogs 1.1
