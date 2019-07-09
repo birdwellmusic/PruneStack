@@ -16,11 +16,11 @@ import QtQuick.Dialogs 1.1
 import MuseScore 3.0
 
 MuseScore {
-    version:  "1.1"
+    version: "1.1"
     description: "Selectively prune notes from a chord based on their vertical stack level in the chord."
     menuPath: "Plugins.Prune Stack"
     pluginType: "dialog"
-    width:  400
+    width: 400
     height: 240
 
     function getAllChordsInRange(chordArray) {
@@ -43,14 +43,14 @@ MuseScore {
             // the last measure of the score.
             // rewind(2) goes behind the last segment (where
             // there's none) and sets tick=0
-            endTick = curScore.lastSegment.tick + 1;  // TODO: broken in 3x
+            endTick = curScore.lastSegment.tick + 1;
         } else {
             endTick = cursor.tick;
         }
 
         endStaff = cursor.staffIdx;
 
-        if ( startStaff != endStaff ) {
+        if (startStaff != endStaff) {
             console.log("Hey there, you must select a single staff only!");
             return;
         }
@@ -84,19 +84,53 @@ MuseScore {
         ctrlMessageDialog.visible = true;
     }
 
-    function moveToVoice()
-    {
-        // TODO: this is only marginally functional/useful - the FUTURE goal is to move
-        // ONLY the selected LEVEL chord notes to the target voice... RB
+    function moveToVoice() {
+        console.log("Starting moveToVoice()");
 
-        var cmdVoiceIndex = ctrlComboBoxVoice.currentIndex + 1;
-        cmd("voice-" + cmdVoiceIndex);
+        // New for 3.x - this functionality
+        // is sort of odd, but currently works like this:
+        // 1. Prune the stack first
+        // 2. Move remaining notes to the desired layer.
+        // This is at least slightly more useful than
+        // the 2.x version of this script, giving the 
+        // user a way to selectively move N number of
+        // notes to a new layer...the pruning may even 
+        // be of use...
 
-        return true;
+        // FUTURE: would prefer if we could NOT
+        // prune, but rather move the notes
+        // in the stack level to the desired new layer.
+        // But that would require that we set the 
+        // notes not in the selected chord level(s) to no
+        // longer be selected and currently the "selected"
+        // property of a Note (or any Element) is read only.
+
+        var wereNotesMoved = false;
+
+        if (pruneStack()) {
+
+            curScore.startCmd(); // Start collecting undo info.
+
+            var cmdVoiceIndex = ctrlComboBoxVoice.currentIndex + 1;
+            console.log("moveToVoice() is attempting to move selected notes (in selected levels) to layer " + cmdVoiceIndex);
+            cmd("voice-" + cmdVoiceIndex);
+            console.log("moveToVoice() cmd call was executed.");
+
+            curScore.endCmd(); // Finish off the undo record.
+
+            wereNotesMoved = true;
+        }
+        else {
+            console.log("moveToVoice() did NOT move any notes to the target layer.");
+        }
+
+
+        console.log("Ending moveToVoice()");
+
+        return wereNotesMoved;
     }
 
-    function pruneStack()
-    {
+    function pruneStack() {
         console.log("Starting pruneStack()");
 
         // Get the selected chords in the selected segment...
@@ -106,48 +140,49 @@ MuseScore {
         var notesToDelete = new Array();
 
         var levels = new Array();
-        if ( ctrlCheckBoxLevel8.checked ) {
+        if (ctrlCheckBoxLevel8.checked) {
             levels.push(8);
         }
-        if ( ctrlCheckBoxLevel7.checked ) {
+        if (ctrlCheckBoxLevel7.checked) {
             levels.push(7);
         }
-        if ( ctrlCheckBoxLevel6.checked ) {
+        if (ctrlCheckBoxLevel6.checked) {
             levels.push(6);
         }
-        if ( ctrlCheckBoxLevel5.checked ) {
+        if (ctrlCheckBoxLevel5.checked) {
             levels.push(5);
         }
-        if ( ctrlCheckBoxLevel4.checked ) {
+        if (ctrlCheckBoxLevel4.checked) {
             levels.push(4);
         }
-        if ( ctrlCheckBoxLevel3.checked ) {
+        if (ctrlCheckBoxLevel3.checked) {
             levels.push(3);
         }
-        if ( ctrlCheckBoxLevel2.checked ) {
+        if (ctrlCheckBoxLevel2.checked) {
             levels.push(2);
         }
-        if ( ctrlCheckBoxLevel1.checked ) {
+        if (ctrlCheckBoxLevel1.checked) {
             levels.push(1);
         }
 
         console.log("# of chords: " + chords.length);
         console.log("# of levels to prune: " + levels.length);
 
-        // NOTE: it's a known issue if we delete every note in a the chord (cause an exception)
-        // so if this is detected, we won't actually prune...
+        // NOTE: previous versions crashed when deleting all notes from a chord.
+        // We will continue to detect this in 3.x even though it may no longer
+        // be an issue in 3.x - no real purpose in deleting all notes.  -RB
         var emptyChordPotential = false;
 
-        for (var c=0; c < chords.length; c++) {
+        for (var c = 0; c < chords.length; c++) {
             var notesInChord = chords[c].notes.length;
 
-            console.log("# of notes in chord # " + (c+1) + ":" + notesInChord);
+            console.log("# of notes in chord # " + (c + 1) + ":" + notesInChord);
 
             var notesQueuedToDeleteInChord = 0;
 
-            for ( var n=0; n < chords[c].notes.length; n++ ) {
-                for ( var j=0; j < levels.length; j++ ) {
-                    if ( (levels[j]-1) != n ) {
+            for (var n = 0; n < chords[c].notes.length; n++) {
+                for (var j = 0; j < levels.length; j++) {
+                    if ((levels[j] - 1) != n) {
                         //console.log("Skipped note #" + (n+1) + " at level #" + levels[j] + " in chord #" + (c+1));
                         continue;
                     }
@@ -155,10 +190,10 @@ MuseScore {
                     notesToDelete.push(chords[c].notes[n]);
                     notesQueuedToDeleteInChord++;
 
-                    console.log("Added a note to delete at level #" + levels[j] + " in chord #" + (c+1) + " - # notes in chord: " + notesInChord );
+                    console.log("Added a note to delete at level #" + levels[j] + " in chord #" + (c + 1) + " - # notes in chord: " + notesInChord);
 
-                    if ( notesQueuedToDeleteInChord >= notesInChord ) {
-                        console.log("Empty chord potential detected at level #" + levels[j] + " in chord #" + (c+1));
+                    if (notesQueuedToDeleteInChord >= notesInChord) {
+                        console.log("Empty chord potential detected at level #" + levels[j] + " in chord #" + (c + 1));
                         emptyChordPotential = true;
                     }
                 }
@@ -168,12 +203,12 @@ MuseScore {
         var pruned = false;
         var whyNoPrune = qsTr("");
 
-        if ( notesToDelete.length > 0)
-        {
-            if ( emptyChordPotential == false ) {
-                for ( var n = 0; n < notesToDelete.length; n++) {
+        if (notesToDelete.length > 0) {
+            curScore.startCmd();   // Start collecting undo info. -DLLarson (Dale)
+            if (emptyChordPotential == false) {
+                for (var n = 0; n < notesToDelete.length; n++) {
                     var chord = notesToDelete[n].parent;
-                    chord.remove(notesToDelete[n]); // TODO: broken in 3x
+                    chord.remove(notesToDelete[n]);
                     pruned = true;
                 }
             }
@@ -182,15 +217,12 @@ MuseScore {
                 whyNoPrune = qsTr("Can't do - would create an empty chord! Try reducing levels.");
                 pruned = false;
             }
+            curScore.endCmd(); // Finish off the undo record. -DLLarson (Dale)
         }
 
-        // if something pruned, refresh the current state of the layout with changes!
-        if ( pruned ) {
-            curScore.doLayout();
-        } else {
-
+        // only if something pruned do we display a message...
+        if (pruned == false) {
             var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
-
             displayMessageDlg(msg);
         }
 
@@ -215,8 +247,8 @@ MuseScore {
         property alias btnPruneStack: btnPruneStack
         property alias btnMoveToVoice: btnMoveToVoice
         property alias btnClose: btnClose
-        property alias ctrlHintLabel : ctrlHintLabel
-        property alias ctrlMessageDialog : ctrlMessageDialog
+        property alias ctrlHintLabel: ctrlHintLabel
+        property alias ctrlMessageDialog: ctrlMessageDialog
 
         width: 400
         height: 240
@@ -322,7 +354,7 @@ MuseScore {
                 height: 35
                 text: qsTr("Prune Stack")
                 onClicked: {
-                    if ( pruneStack() ) {
+                    if (pruneStack()) {
                         Qt.quit();
                     }
                 }
@@ -334,9 +366,9 @@ MuseScore {
                 y: 55
                 width: 125
                 height: 35
-                text: qsTr("Move to Voice")
+                text: qsTr("Prune && Move to Voice")
                 onClicked: {
-                    if ( moveToVoice() ) {
+                    if (moveToVoice()) {
                         Qt.quit();
                     }
                 }
@@ -360,7 +392,7 @@ MuseScore {
                 x: 20
                 y: 100
                 width: 250
-                text: qsTr("Hints: check the levels you want to prune. Notes not in level are skipped; Save your score now!")
+                text: qsTr("Hint: check the levels you want to prune from the chord stacks.")
                 font.italic: true
                 color: "white"
                 wrapMode: Text.WordWrap
