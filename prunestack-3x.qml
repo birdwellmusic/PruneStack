@@ -207,8 +207,7 @@ MuseScore {
             curScore.startCmd();   // Start collecting undo info. -DLLarson (Dale)
             if (emptyChordPotential == false) {
                 for (var n = 0; n < notesToDelete.length; n++) {
-                    var chord = notesToDelete[n].parent;
-                    chord.remove(notesToDelete[n]);
+					removeElement(notesToDelete[n]); // this method added in July 2019 by the MuseScore API team/devs (DLLarson/Dale) - thanks all!
                     pruned = true;
                 }
             }
@@ -222,7 +221,7 @@ MuseScore {
 
         // only if something pruned do we display a message...
         if (pruned == false) {
-            var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
+            var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select a single staff and the level(s) that match your chord stack sizes.");
             displayMessageDlg(msg);
         }
 
