@@ -1,5 +1,5 @@
 //==========================================================================================
-//  PruneStack Plugin for MuseScore 3.2.x or higher
+//  PruneStack Plugin for MuseScore 3.3.x or higher
 //  This script Copyright (C) 2016-2019 Rob Birdwell/BirdwellMusic LLC and BirdwellMusic.com
 //  Full credit to the MuseScore team and all numerous other plugin developers.
 //  Portions of this script were adapted from the colornotes.qml, walk.qml and
