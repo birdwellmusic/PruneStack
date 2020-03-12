@@ -1,6 +1,6 @@
 //==========================================================================================
-//  PruneStack Plugin for MuseScore 3.3.x or higher
-//  This script Copyright (C) 2016-2019 Rob Birdwell/BirdwellMusic LLC and BirdwellMusic.com
+//  PruneStack Plugin for MuseScore 3.2.x or higher
+//  This script Copyright (C) 2016-2020 Rob Birdwell/BirdwellMusic LLC and BirdwellMusic.com
 //  Full credit to the MuseScore team and all numerous other plugin developers.
 //  Portions of this script were adapted from the colornotes.qml, walk.qml and
 //  other scripts by Werner Schweer, et al.
@@ -110,6 +110,22 @@ MuseScore {
         if (pruneStack()) {
 
             curScore.startCmd(); // Start collecting undo info.
+            
+            /////////////////////////////////////////////////////////////
+            // we must re-select the remaining chords in the selected segment...
+            var chords = new Array();
+            getAllChordsInRange(chords);
+            
+            for (var c = 0; c < chords.length; c++) {
+                  var notesInChord = chords[c].notes.length;
+
+                  for (var n = 0; n < chords[c].notes.length; n++) {
+                        // TODO: need something like this, but it doesn't exist ??
+                        // See: https://musescore.org/en/node/292366
+                        ///chords[c].notes[n].selected = true; // TODO: this doesn't exist; will currently only move the last note to the target layer. -RB 3/11/2020
+                  }
+            }      
+            /////////////////////////////////////////////////////////////
 
             var cmdVoiceIndex = ctrlComboBoxVoice.currentIndex + 1;
             console.log("moveToVoice() is attempting to move selected notes (in selected levels) to layer " + cmdVoiceIndex);
@@ -207,7 +223,8 @@ MuseScore {
             curScore.startCmd();   // Start collecting undo info. -DLLarson (Dale)
             if (emptyChordPotential == false) {
                 for (var n = 0; n < notesToDelete.length; n++) {
-					removeElement(notesToDelete[n]); // this method added in July 2019 by the MuseScore API team/devs (DLLarson/Dale) - thanks all!
+                    var chord = notesToDelete[n].parent;
+                    chord.remove(notesToDelete[n]);
                     pruned = true;
                 }
             }
@@ -221,7 +238,7 @@ MuseScore {
 
         // only if something pruned do we display a message...
         if (pruned == false) {
-            var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select a single staff and the level(s) that match your chord stack sizes.");
+            var msg = whyNoPrune.length > 0 ? whyNoPrune : qsTr("Nothing pruned! Select the level(s) that match your chord stack sizes.");
             displayMessageDlg(msg);
         }
 
@@ -347,9 +364,9 @@ MuseScore {
 
             Button {
                 id: btnPruneStack
-                x: 270
+                x: 245
                 y: 15
-                width: 125
+                width: 150
                 height: 35
                 text: qsTr("Prune Stack")
                 onClicked: {
@@ -361,9 +378,9 @@ MuseScore {
 
             Button {
                 id: btnMoveToVoice
-                x: 270
+                x: 245
                 y: 55
-                width: 125
+                width: 150
                 height: 35
                 text: qsTr("Prune && Move to Voice")
                 onClicked: {
