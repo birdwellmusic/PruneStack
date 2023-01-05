@@ -19,4 +19,4 @@
 
 ### Contact ###
 
-* Rob Birdwell - birdwellmusic.com/contact
+* Rob Birdwell - https://www.birdwellmusic.com/contact
