@@ -19,9 +19,12 @@ import QtQuick.Dialogs 1.1
 
 MuseScore {
     version: "1.4"
+	title: "Prune Stack"
     description: "Selectively prune notes from a chord based on their vertical stack level in the chord."
-    menuPath: "Plugins.Prune Stack"
-    pluginType: "dialog"
+	pluginType: "dialog"
+    categoryCode: "composing-arranging-tools"
+    thumbnailName: "prunestack.png"
+    
     width: 400
     height: 240
 
@@ -142,7 +145,6 @@ MuseScore {
             console.log("moveToVoice() did NOT move any notes to the target layer.");
         }
 
-
         console.log("Ending moveToVoice()");
 
         return wereNotesMoved;
@@ -250,12 +252,8 @@ MuseScore {
     }
 
     onRun: {
-        console.log("PruneStack script starting...");
-
-        if (typeof curScore === 'undefined') {
-            var msg = "PruneStack exiting without processing - no current score!";
-            console.log(msg);
-            displayMessageDlg(msg);
+        if (!curScore) {
+            error("No score open.\nPruneStack requires an open score to run.\n");
             quit();
         }
     }
